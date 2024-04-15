@@ -16,7 +16,7 @@ const PORT = process.env.PORT || 3000;
 
 const app = express();
 
-// app.use(cors());
+app.use(cors());
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
@@ -24,8 +24,8 @@ app.use(express.urlencoded({ extended: true }));
 
 
 app.use('/api/auth', authRouter);
-app.use('/api/patient',verify_patient, patientRouter);
-app.use('/api/doctor',verify_doctor, doctorRouter);
+app.use('/api/patient', patientRouter);
+app.use('/api/doctor', doctorRouter);
 
 
 app.listen(PORT, () => {

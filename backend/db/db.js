@@ -10,6 +10,8 @@ const pool = new Pool({
     username: PGUSER,
     password: PGPASSWORD,
     port: 5432,
+    idleTimeoutMillis: 0,
+    connectionTimeoutMillis: 0,
     ssl: {
       require: true,
     },
@@ -162,7 +164,7 @@ async function patient_id(email){
 
 //returning the patient details from the database
 async function getpatientData(req, res) {
-    console.log(req.Patient_ID);
+    console.log(req.params.id);
     const client = await pool.connect();
     try {
         const id = req.params.id; // Getting the patient_id from the authenticated wala
@@ -171,7 +173,7 @@ async function getpatientData(req, res) {
         //having two doctor recommended test and patient tests
         // const doc_tests = await client.query(`select t.test_name,t.recommendation_date,d.name as doctor_name from tests_recommended as t join doctors as d on t.doctor_ID = d.doctor_id where t.patient_id = '${id}'`);
         const pat_tests = await pool.query(`select test_name,result,date_taken from tests_taken where patient_id = '${id}'`);
-
+        console.log(pat_tests);
         if (patient_info.rows.length === 0) {//if no record then the query gives an empty array
             return res.status(404).send({ error: 'Patient not found' });
         }
@@ -180,7 +182,7 @@ async function getpatientData(req, res) {
             patient_info: patient_info.rows[0], // Assuming patient_info has only one record
             medical_history: medical_history.rows.length > 0 ? medical_history.rows[0] : null,
             // doctor_recommended_tests: doc_tests.rows.length > 0 ? doc_tests.rows[0] : null,
-            patient_taken_tests: pat_tests.rows.length > 0 ? pat_tests.rows[0] : null
+            patient_taken_tests: pat_tests.rows.length > 0 ? pat_tests.rows : null
         };
 
         res.status(200).json(responseData);
@@ -541,7 +543,7 @@ async function getdoctorData(req, res) {//this is like in dashboard for doctor t
             return res.status(404).send({ error: 'Doctor not found' });
         }
         //doctor can only see the doctor details all his details
-        res.status(200).send({'Doctor details': doctor_details.rows[0]});
+        res.status(200).send({'doctor_details': doctor_details.rows[0]});
     } catch (err) {
         console.error('Error:', err);
         res.status(500).send({ error: 'Internal Server Error' });
@@ -607,7 +609,7 @@ async function docdashboardSend(req, res) {
     try {
         const id = req.params.id;
 
-        const appointmentsResult = await client.query(`SELECT p.patient_id,p.name as patient_name, a.Date_of_appointment, a.slot_no,a.reason FROM appointments a JOIN patients p ON a.patient_id = p.patient_id WHERE doctor_id = '${id}' AND status = 'pending'`);//get all details of pending appointments of the doctor
+        const appointmentsResult = await client.query(`SELECT appointment_id,p.patient_id,p.name as patient_name, a.Date_of_appointment, a.slot_no,a.reason FROM appointments a JOIN patients p ON a.patient_id = p.patient_id WHERE doctor_id = '${id}' AND status = 'pending'`);//get all details of pending appointments of the doctor
 
         const appointmentIdentify = await client.query(`SELECT appointment_id,doctor_id,patient_id FROM appointments WHERE doctor_id = '${id}' AND status = 'pending'`);
         const responseData = {
@@ -630,8 +632,9 @@ async function docdashboardSend(req, res) {
 async function getdocpatientData(req, res) {
     const client = await pool.connect();
     try {
-        const {appointment_id,doctor_id,patient_id}= req.body;//get the details to uniquely identify the appointment even though here only patid is enough but all for unique identification of the appointmentID
-
+        const id = req.params.id;
+        // const {appointment_id,doctor_id,patient_id}= req.body;//get the details to uniquely identify the appointment even though here only patid is enough but all for unique identification of the appointmentID
+        // const {patient_id}= req.body;//get the details to uniquely identify the appointment even though here only patid is enough but all for unique identification of the appointmentID
         // const patient_id = await pool.query('Select Patient_ID FROM appointment WHERE ID = ?', [appointmentID]);
         // const id = patient_id[0].map(patient_id => patient_id.Patient_ID) // Getting the patient_id from the appointments
         // const patient_info = await pool.query('SELECT * FROM patient_info WHERE patient_id = ?', [id]);
@@ -650,12 +653,12 @@ async function getdocpatientData(req, res) {
         // };
 
         // res.status(200).send(responseData);
-        const patient_info = await client.query(`SELECT patient_id,name,gender,contact,address,email FROM patients WHERE patient_id = '${patient_id}'`);
-        const medical_history = await client.query(`SELECT patient_id,diagnosis,date_of_diagnosis,treatment_given,family_history FROM medical_history WHERE patient_id = '${patient_id}'`);
+        const patient_info = await client.query(`SELECT patient_id,name,gender,contact,address,email FROM patients WHERE patient_id = '${id}'`);
+        const medical_history = await client.query(`SELECT patient_id,diagnosis,date_of_diagnosis,treatment_given,family_history FROM medical_history WHERE patient_id = '${id}'`);
         //having two doctor recommended test and patient tests
         // const doc_tests = await client.query(`select t.test_name,t.recommendation_date,d.name as doctor_name from tests_recommended as t join doctors as d on t.doctor_ID = d.doctor_id where t.patient_id = '${id}'`);
-        const pat_tests = await pool.query(`select test_name,result,date_taken from tests_taken where patient_id = '${patient_id}'`);
-        const doctor_recommended_tests = await client.query(`SELECT t.test_name, d.name as doctor_name,t.result as test_result  FROM tests_recommended t JOIN doctors d ON t.doctor_ID = d.doctor_id WHERE t.patient_id = '${patient_id}'`);
+        const pat_tests = await pool.query(`select test_name,result,date_taken from tests_taken where patient_id = '${id}'`);
+        const doctor_recommended_tests = await client.query(`SELECT t.test_name, d.name as doctor_name,t.result as test_result  FROM tests_recommended t JOIN doctors d ON t.doctor_ID = d.doctor_id WHERE t.patient_id = '${id}'`);
 
         if (patient_info.rows.length === 0) {//if no record then the query gives an empty array
             return res.status(404).send({ error: 'Patient not found' });
@@ -665,7 +668,7 @@ async function getdocpatientData(req, res) {
             patient_info: patient_info.rows[0], // Assuming patient_info has only one record
             medical_history: medical_history.rows.length > 0 ? medical_history.rows[0] : null,
             // doctor_recommended_tests: doc_tests.rows.length > 0 ? doc_tests.rows[0] : null,
-            patient_taken_tests: pat_tests.rows.length > 0 ? pat_tests.rows[0] : null,
+            patient_taken_tests: pat_tests.rows.length > 0 ? pat_tests.rows : null,
             doctor_recommended_tests: doctor_recommended_tests.rows.length > 0 ? doctor_recommended_tests.rows[0] : null
         };
 
@@ -690,8 +693,13 @@ async function docPrescribe(req,res){
         // const patient_id = await pool.query('Select Patient_ID FROM appointment WHERE ID = ?', [appointmentID]);
         // const id = patient_id[0].map(patient_id => patient_id.Patient_ID) // Getting the patient_id from the appointments
         const {medication_name, dosage, frequency} = req.body;
-        await client.query(`INSERT INTO prescriptions(doctor_id,patient_id,medication_name,dosage,frequency) Values ('${doctor_id}','${patient_id}','${medication_name}','${dosage}','${frequency}')`);
+        const response = await client.query(`INSERT INTO prescriptions(doctor_id,patient_id,medication_name,dosage,frequency) Values ('${doctor_id}','${patient_id}','${medication_name}','${dosage}','${frequency}')`);
         // await pool.query('UPDATE prescription_table SET Prescription_ID = (SELECT COALESCE(MAX(Prescription_ID),0) + 1 FROM prescription_table) WHERE Prescription_ID = LAST_INSERT_ID();');
+
+        //so that when updated,inserted only then add if something wrong dont add 
+        if(response.rowCount === 0){
+            return res.status(404).send({error:'Error while adding prescription'});
+        }
         res.status(200).send({message:'Prescription added successfully'});
     }catch(err){
         console.log(err);

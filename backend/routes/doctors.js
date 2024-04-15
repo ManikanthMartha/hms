@@ -14,13 +14,13 @@ doctorRouter.route('/dashboard/:id')//route for doctor dashboard will have appoi
 //when clicked on appointment frontend shd show the patient name(sent to the frontend with the dashboard appointments) so shd shd patient name ,option for detials,prescribe medications,prescribe tests
 //will send patient name,option to view pattient details,
 
-doctorRouter.route('/appointment/details')//appointment id,doc id,patient id is to be passed by the frontend in body
+doctorRouter.route('/appointment/details/:id')//appointment id,doc id,patient id is to be passed by the frontend in body
 //shd give the patient details on clicking on the view details
 .get(db.getdocpatientData);//will give the patient details as detials,medical history,tests taken
 //(TO DO is to see adding doctor tests also)
 //done of getting patient detials except for showing the doctor tests
 
-doctorRouter.route('/appointment/prescribe')//prescribing the medications
+doctorRouter.route('/appointment/prescribe/:pid/:did')//prescribing the medications
 //appointment id,doc id,patient id is to be passed by the frontend in body
 //the body should have Medication_Name, Dosage, Frequency(in frontend options to enter)
 .post(db.docPrescribe);//new prescription added ka done

@@ -14,9 +14,9 @@ patientRouter.route('/dashboard/:id')//route for patient dashboard
 
 patientRouter.route('/appointments/').get(availableDoctors);//appointments se doctors send
 
-// patientRouter.route('/bookappointments/')
-// .get(appointmentSlots)//when id is passed of doctor in body the slots of his which  is booked and not booked is send to him and shd display only available slots for the patient
-// .post(bookAppointment);//when patient id is passed as post request to book appointment
+patientRouter.route('/bookappointments/')
+.get(appointmentSlots)//when id is passed of doctor in body the slots of his which  is booked and not booked is send to him and shd display only available slots for the patient
+.post(bookAppointment);//when patient id is passed as post request to book appointment
 
 //when a request to /patient/eclinic is made the eclinic router is used
 // patientRouter.use('/eclinic',eclinicRouter);

@@ -33,7 +33,7 @@ import {
 const formSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
-  role : z.string().min(2).max(50)
+  role : z.string()
 })
 
 
@@ -50,16 +50,19 @@ export default function Home() {
     },
   })
   async function onSubmit(creds: z.infer<typeof formSchema>) {
-    // const id = login(values.email, values.password, values.role);
-    // console.log(id)
     try{
       const data = await loginUser(creds.email, creds.password, creds.role)
+     if(data){
       setIsLoggedIn(true);
       if (creds.role === 'patient') {
-        router.push('/patient');
+        router.push(`/patient/${encodeURIComponent(data.id)}`);
       } else if (creds.role === 'doctor') {
-        router.push('/doctor');
+        router.push(`/doctor/${encodeURIComponent(data.id)}`);
       }
+     }
+     else{
+      alert("Login Failed")
+     }
       // setOpen(false);
       // toast.success("Student Added Successfully")
       // revalidateClientPath('/') //! revalidate the whole console
