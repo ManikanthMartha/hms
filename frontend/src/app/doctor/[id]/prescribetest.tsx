@@ -25,6 +25,7 @@ import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { prescribeTest } from '@/services/data-fetch';
+import { toast } from 'sonner';
 
 const formSchema = z.object({
     test_name: z.string(),
@@ -37,6 +38,7 @@ export interface PrescribeTestProps {
 }
 
 export default function PrescribeTest({ pid, did }: PrescribeTestProps) {
+    const [open, setOpen] = React.useState(false)
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
@@ -47,6 +49,8 @@ export default function PrescribeTest({ pid, did }: PrescribeTestProps) {
     // 2. Define a submit handler.
     async function onSubmit(values: z.infer<typeof formSchema>) {
         await prescribeTest(did, pid, values.test_name )
+        setOpen(false);
+        toast.success("Test Prescribed")
         // console.log(pid, did, values)
     }
     return (

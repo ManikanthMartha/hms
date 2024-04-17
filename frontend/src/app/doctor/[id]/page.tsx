@@ -104,7 +104,7 @@ export default async function Page({ params }: { params: { id: string, patient_i
                   </DialogHeader>
                 </DialogContent>
               </Dialog>
-              <Link className=" text-xl p-2 font-medium hover:underline underline-offset-4" href="#">
+              <Link className=" text-xl p-2 font-medium hover:underline underline-offset-4" href="/">
                 Logout
               </Link>
 
@@ -125,19 +125,20 @@ export default async function Page({ params }: { params: { id: string, patient_i
         <section className="w-full py-6  bg-gray-100 dark:bg-gray-800 ">
           <div className="container px-4 md:px-6">
             <div className="grid items-center gap-6 lg:grid-cols-[1fr_500px] lg:gap-12 xl:grid-cols-[1fr_550px]">
-              <div className="flex flex-col justify-center space-y-4">
+              <div className="flex flex-col  max-w-4xl space-y-4">
                 <div className="space-y-4">
                   <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Your Upcoming Appointments</h2>
                 </div>
-                <div className="flex flex-col gap-4 items-center max-w-7xl">
+                <div className="flex flex-col items-center w-full">
                   {appointments && appointments.length > 0 ? (
                     appointments.map(async (appointment, index) => {
                       // const appointmentSlotTiming = slot_timings[appointment.slot_no];
-                      const pid = appointment.patient_id
+                      const pid = appointment.patient_id;
+                      const aid = appointment.appointment_id;
                       // const appointment_id = ids.find(id => id.patient_id === pid)?.appointment_id;
                       const details = await getAppointmentDetails({ pid });
                       return (
-                        <div key={index} className='flex flex-1 flex-row max-w-3xl'>
+                        <div key={index} className='flex gap-6 flex-row '>
                           <div className='flex items-center gap-4'>
                             <CalendarIcon className="w-8 h-8 rounded-lg bg-gray-200 p-2 dark:bg-gray-800" />
                             <div className="grid gap-1.5">
@@ -243,7 +244,7 @@ export default async function Page({ params }: { params: { id: string, patient_i
 
                             <PrescribeTest pid={pid} did={did} />
 
-                            <PrescribeMed pid={pid} did={did} />
+                            <PrescribeMed pid={pid} did={did} aid={aid} />
 
                             <DoneButton appointment_id={appointment.appointment_id} did={did} pid={pid} />
                             

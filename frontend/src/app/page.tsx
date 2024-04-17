@@ -28,6 +28,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Toaster, toast } from 'sonner'
+
 
 
 const formSchema = z.object({
@@ -52,8 +54,11 @@ export default function Home() {
   async function onSubmit(creds: z.infer<typeof formSchema>) {
     try{
       const data = await loginUser(creds.email, creds.password, creds.role)
+      console.log(data);
+      
      if(data){
       setIsLoggedIn(true);
+      toast.success("Login Successful")
       if (creds.role === 'patient') {
         router.push(`/patient/${encodeURIComponent(data.id)}`);
       } else if (creds.role === 'doctor') {
@@ -77,6 +82,8 @@ export default function Home() {
   }
   return (
     <div className=" h-screen flex items-center justify-center">
+            <Toaster />
+
       <Card className="w-1/3">
       <CardHeader className="space-y-1">
         <CardTitle className="text-2xl font-bold">Hospital Management System</CardTitle>
@@ -134,6 +141,7 @@ export default function Home() {
               <FormMessage />
             </FormItem>
           )}/>
+        {/* Don&apos;t have an account?  <Link href="/signup">Signup here</Link> */}
         <Button className="w-full"type="submit">Login</Button>
       </form>
     </Form>

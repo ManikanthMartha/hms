@@ -23,12 +23,12 @@ async function login(req,res){
             const pass = await db.docpassword(email); 
             
             if(pass === password){
-                const doctor_id = await db.doctor_id(email);
-                generateTokenandSetCookie(doctor_id, role, res);
+                const id = await db.doctor_id(email);
+                generateTokenandSetCookie(id, role, res);
                 res.status(200).json({
                     message:"Login Successful",
                     // token:create_jwt(doctor_id,role),
-                    doctor_id
+                    id
                 });
                 return ;
             }
@@ -48,12 +48,12 @@ async function login(req,res){
             const pass = await db.patpassword(email);
             
             if(pass === password){
-                const patient_id = await db.patient_id(email);
-                generateTokenandSetCookie(patient_id, role, res);
+                const id = await db.patient_id(email);
+                generateTokenandSetCookie(id, role, res);
                 res.status(200).json({
                     message:"Login Successful",
                     // token:create_jwt(patient_id,role,res),patient_id
-                    patient_id
+                    id
                 });
                 return;
             }

@@ -1,4 +1,4 @@
-// const {takeCare} = require('../genai/ai');
+const {takeCare} = require('../genai/ai');
 const { Pool } = require('pg');
 require('dotenv').config();
 
@@ -17,12 +17,6 @@ const pool = new Pool({
     },
   });
 
-// const pool = mysql2.createPool({
-//     host: process.env.host,
-//     user: process.env.user,
-//     password: process.env.password,
-//     database: process.env.database
-// }).promise();
 async function test (req,res) {
     const client = await pool.connect();
     try {
@@ -242,9 +236,10 @@ async function addpatientData(personal_array,medical_array,test_array) {//to do 
     console.log(personal_array,medical_array,test_array);
     const client = await pool.connect();
     try {
-        const result = await client.query('SELECT insert_patient($1, $2, $3, $4, $5, $6)', [
+        const result = await client.query('SELECT insert_patient($1, $2, $3, $4, $5, $6, $7)', [
             personal_array.name,
             personal_array.gender,
+            personal_array.age,
             personal_array.contact,
             personal_array.address,
             personal_array.email,
@@ -292,18 +287,74 @@ async function dashboardSend(req, res) {
     try {
         const id = req.params.id;
         console.log(id);
-        const appointmentsResult = await client.query(`SELECT d.name as Doctor_name, a.Date_of_appointment, a.slot_no FROM appointments a JOIN doctors d ON a.doctor_id = d.doctor_id  WHERE a.patient_id = '${id}' AND status = 'pending'`);
+        const appointmentsResult = await client.query(`SELECT d.name as Doctor_name, a.Date_of_appointment, a.slot_no, a.appointment_id FROM appointments a JOIN doctors d ON a.doctor_id = d.doctor_id  WHERE a.patient_id = '${id}' AND status = 'pending'`);
         
-        const prescriptionResult = await client.query(`SELECT p.medication_Name, p.dosage, p.frequency,d.name as Doctor_Name FROM prescriptions p JOIN doctors d ON p.doctor_id = d.doctor_id WHERE p.patient_id = '${id}'`);
+        const prescriptionResult = await client.query(`SELECT p.appointment_id,p.medication_Name, p.dosage, p.frequency,d.name as Doctor_Name FROM prescriptions p JOIN doctors d ON p.doctor_id = d.doctor_id WHERE p.patient_id = '${id}'`);
    
         const testsResult = await client.query(`SELECT t.test_name, d.name as doctor_name,t.result as test_result FROM tests_recommended t JOIN doctors d ON t.doctor_ID = d.doctor_id WHERE t.patient_id = '${id}'`);//getting only doctor tests recommended by doctors
 
+        //if multiple are there to get that will be in array of objects
         const responseData = {
-            appointments: appointmentsResult.rows.length > 0 ? appointmentsResult.rows[0] : null,
-            prescription: prescriptionResult.rows.length > 0 ? prescriptionResult.rows[0] : null,
-            tests: testsResult.rows.length > 0 ? testsResult.rows[0] : null,
+            appointments: appointmentsResult.rows.length > 0 ? appointmentsResult.rows : null,
+            doctor_recommended_prescription: prescriptionResult.rows.length > 0 ? prescriptionResult.rows : null,
+            doctor_recommended_tests: testsResult.rows.length > 0 ? testsResult.rows : null,
             slot_timings: slot_time
         };
+
+
+        res.status(200).send(responseData);
+    } catch (err) {
+        console.error('Error:', err);
+        res.status(500).send({ error: 'Internal Server Error' });
+    }
+    finally{
+        client.release();
+    }
+}
+async function dashboardSendold(req, res) {
+    const client = await pool.connect();
+    try {
+        const id = req.params.id;
+        console.log(id);
+        const appointmentsResult = await client.query(`SELECT d.name as Doctor_name, a.Date_of_appointment, a.slot_no, a.appointment_id FROM appointments a JOIN doctors d ON a.doctor_id = d.doctor_id  WHERE a.patient_id = '${id}' AND status = 'done'`);
+        
+        const prescriptionResult = await client.query(`SELECT p.appointment_id,p.medication_Name, p.dosage, p.frequency,d.name as Doctor_Name FROM prescriptions p JOIN doctors d ON p.doctor_id = d.doctor_id WHERE p.patient_id = '${id}'`);
+   
+        const testsResult = await client.query(`SELECT t.test_name, d.name as doctor_name,t.result as test_result FROM tests_recommended t JOIN doctors d ON t.doctor_ID = d.doctor_id WHERE t.patient_id = '${id}'`);//getting only doctor tests recommended by doctors
+
+        //if multiple are there to get that will be in array of objects
+        const responseData = {
+            appointments: appointmentsResult.rows.length > 0 ? appointmentsResult.rows : null,
+            doctor_recommended_prescription: prescriptionResult.rows.length > 0 ? prescriptionResult.rows : null,
+            doctor_recommended_tests: testsResult.rows.length > 0 ? testsResult.rows : null,
+            slot_timings: slot_time
+        };
+
+
+        res.status(200).send(responseData);
+    } catch (err) {
+        console.error('Error:', err);
+        res.status(500).send({ error: 'Internal Server Error' });
+    }
+    finally{
+        client.release();
+    }
+}
+
+async function dashboardPrescription(req, res) {
+    const client = await pool.connect();
+    try {
+        const id = req.params.id;
+        console.log(id);
+        const prescriptionResult = await client.query(`SELECT p.appointment_id,p.medication_Name, p.dosage, p.frequency,d.name as Doctor_Name FROM prescriptions p JOIN doctors d ON p.doctor_id = d.doctor_id WHERE p.appointment_id = ${id}`);
+        //if multiple are there to get that will be in array of objects
+        const responseData = {
+            // appointments: appointmentsResult.rows.length > 0 ? appointmentsResult.rows : null,
+            doc_prescription: prescriptionResult.rows.length > 0 ? prescriptionResult.rows : null,
+            // doctor_recommended_tests: testsResult.rows.length > 0 ? testsResult.rows : null,
+            // slot_timings: slot_time
+        };
+
 
         res.status(200).send(responseData);
     } catch (err) {
@@ -335,11 +386,11 @@ async function availableDoctors(req, res) {
         //     return res.send({ message: "The selected day is a holiday" });
 
         // Retrieve doctors available for the provided department and day
-        const doctors = await client.query(`SELECT d.name as doctor_name FROM opd_day as o NATURAL JOIN doctors as d WHERE o.opd_day = lower('${day}') AND d.department_name = '${department}'`);
+        const doctors = await client.query(`SELECT d.doctor_id,d.name as doctor_name FROM opd_day as o NATURAL JOIN doctors as d WHERE o.opd_day = lower('${day}') AND d.department_name = '${department}'`);
         //db values are case sensitive so when querying them lower to all and use
     
         // Send the list of available doctors as response
-        res.status(200).send({"available doctors": doctors.rows.map(doctor => doctor.doctor_name)});
+        res.status(200).send({"available_doctors": doctors.rows});//list of available doctors as array of objects with the id and name(ID SO THAT CAN BE ACCESSED AND SEND LATER)
         
     } catch (err) {
         console.error('Error:', err);
@@ -405,14 +456,15 @@ async function appointmentSlots(req, res) {
 async function bookAppointment(req, res) {
     const client = await pool.connect();
     try {
-        const patId = req.Patient_ID;
-        const {slot_no, date, reason_of_appointment,docID } = req.body;
+        // const patId = req.Patient_ID;
+        const id = req.params.id;
+        const { slot_no, date, reason_of_appointment,docID } = req.body;
         const day = new Date(date).toLocaleDateString('en-US', { weekday: 'long' });
         // Insert into appointments
         console.log(docID);
-        console.log(patId);
+        // console.log(patId);
         //see to check for date,uska format and all
-        await client.query(`INSERT INTO appointments (doctor_id, patient_id,date_of_appointment, slot_no, status, reason) VALUES ('${docID}','${patId}','${date}','${slot_no}','pending','${reason_of_appointment}')`);
+        await client.query(`INSERT INTO appointments (doctor_id, patient_id,date_of_appointment, slot_no, status, reason) VALUES ('${docID}','${id}','${date}','${slot_no}','pending','${reason_of_appointment}')`);
         
         // Insert into slot_details-NO SLOT DETAILS
         // await pool.query('INSERT INTO slot_details (slot_no, date, day, patient_id, doctor_id) VALUES (?, ?, ?, ?, ?)', [slot_no, date, day, patId, docId]);
@@ -693,7 +745,7 @@ async function docPrescribe(req,res){
         // const patient_id = await pool.query('Select Patient_ID FROM appointment WHERE ID = ?', [appointmentID]);
         // const id = patient_id[0].map(patient_id => patient_id.Patient_ID) // Getting the patient_id from the appointments
         const {medication_name, dosage, frequency} = req.body;
-        const response = await client.query(`INSERT INTO prescriptions(doctor_id,patient_id,medication_name,dosage,frequency) Values ('${doctor_id}','${patient_id}','${medication_name}','${dosage}','${frequency}')`);
+        const response = await client.query(`INSERT INTO prescriptions(doctor_id,patient_id,medication_name,dosage,frequency,appointment_id) Values ('${doctor_id}','${patient_id}','${medication_name}','${dosage}','${frequency}','${appointment_id}')`);
         // await pool.query('UPDATE prescription_table SET Prescription_ID = (SELECT COALESCE(MAX(Prescription_ID),0) + 1 FROM prescription_table) WHERE Prescription_ID = LAST_INSERT_ID();');
 
         //so that when updated,inserted only then add if something wrong dont add 
@@ -749,4 +801,4 @@ async function docAppointmentStatus(req,res){
 }
 // module.exports = { docusers,docpassword,doctor_id,patient_id,patusers,patpassword,getpatientData, addpatientData, dashboardSend,availableDoctors,appointmentSlots,bookAppointment,getquestions,recommend,adddoctorData,getdoctorData,docdashboardSend,getdocpatientData,docPrescribe,docTest,docAppointmentStatus,showDiseases,test};
 
-module.exports = { docusers,docpassword,doctor_id,patient_id,patusers,patpassword,getpatientData, addpatientData, dashboardSend,availableDoctors,appointmentSlots,bookAppointment,getquestions,recommend,getdoctorData,docdashboardSend,getdocpatientData,docPrescribe,docTest,docAppointmentStatus,showDiseases,test};
+module.exports = { docusers,docpassword,doctor_id,patient_id,patusers,patpassword,getpatientData, addpatientData, dashboardSend,availableDoctors,appointmentSlots,bookAppointment,getquestions,recommend,getdoctorData,docdashboardSend,getdocpatientData,docPrescribe,docTest,docAppointmentStatus,showDiseases,dashboardPrescription,test,dashboardSendold};

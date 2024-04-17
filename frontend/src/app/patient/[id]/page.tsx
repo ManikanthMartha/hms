@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { JSX, SVGProps } from "react"
 import { cookies } from 'next/headers'
 
-import { getPatientDetils } from '@/services/data-fetch'
+import { getPatientAppointments, getPatientDetils, getPrescription, getPatientAppointmentsOld } from '@/services/data-fetch'
 import {
   Dialog,
   DialogContent,
@@ -23,16 +23,24 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import BookAppointmentdept from './BookAppointmentdept'
+import AppointmentBook from './AppointmentBook'
 
 
-export default async function Page({ params }: { params: { id: string, patient_id: string } }) {
+export default async function Page({ params }: { params: { id: string } }) {
   const pid = params.id;
-  // const tokenn = CookieStore.get('jwt');
-  // console.log('TOKEN',tokenn);
+
   const patient_data = await getPatientDetils({ pid });
   const medical_tests = patient_data.patient_taken_tests;
   const basic_info = patient_data.patient_info;
   const med_hist = patient_data.medical_history;
+
+  const appointment_data = await getPatientAppointments({ pid });
+  const appointment_data_old = await getPatientAppointmentsOld({ pid });
+  const newappointments = appointment_data.appointments;
+  const oldappointments = appointment_data_old.appointments;
+  const prescribed_meds = appointment_data.doctor_recommended_prescription;
+
   function formatDate(dateString: Date | string | number) {
     const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
     const date = new Date(dateString);
@@ -49,12 +57,10 @@ export default async function Page({ params }: { params: { id: string, patient_i
               <span className="sr-only">Hospital</span>
             </Link>
             <div className="ml-auto flex items-center gap-4 sm:gap-6">
-              <Link className=" text-xl p-2 font-medium hover:underline underline-offset-4" href="#">
-                Appointments
-              </Link>
-              <Link className=" text-xl p-2 font-medium hover:underline underline-offset-4" href="#">
-                Contact
-              </Link>
+
+              {/* <BookAppointmentdept /> */}
+              <AppointmentBook pid={pid} />
+
               <Dialog>
                 <DialogTrigger className=" text-xl p-2 font-medium hover:underline underline-offset-4">My Profile</DialogTrigger>
                 <DialogContent className=" max-w-3xl">
@@ -62,52 +68,52 @@ export default async function Page({ params }: { params: { id: string, patient_i
                     <DialogTitle>Your Details</DialogTitle>
                     <DialogDescription>
                       <div className='flex flex-row p-2 gap-6'>
-                      <Table>
-                        <TableBody>
-                          <TableRow>
-                            <TableCell className="font-medium">Name:</TableCell>
-                            <TableCell>{basic_info?.name}</TableCell>
-                          </TableRow>
-                          <TableRow>
-                            <TableCell className="font-medium">Gender:</TableCell>
-                            <TableCell>{basic_info?.gender}</TableCell>
-                          </TableRow>
-                          <TableRow>
-                            <TableCell className="font-medium">Email:</TableCell>
-                            <TableCell>{basic_info?.email}</TableCell>
-                          </TableRow>
-                          <TableRow>
-                            <TableCell className="font-medium">Contact</TableCell>
-                            <TableCell>{basic_info?.contact}</TableCell>
-                          </TableRow>
-                          <TableRow>
-                            <TableCell className="font-medium">Address:</TableCell>
-                            <TableCell>{basic_info?.address}</TableCell>
-                          </TableRow>
-                          
-                        </TableBody>
-                      </Table>
-                      <Table>
-                        <TableBody>
-                          <TableRow>
-                            <TableCell className="font-medium">Diagnosis:</TableCell>
-                            <TableCell>{med_hist?.diagnosis}</TableCell>
-                          </TableRow>
-                          <TableRow>
-                            <TableCell className="font-medium">Date of Diagnosis:</TableCell>
-                            <TableCell>{formatDate(med_hist?.date_of_diagnosis)}</TableCell>
-                          </TableRow>
-                          <TableRow>
-                            <TableCell className="font-medium">Treatment Given:</TableCell>
-                            <TableCell>{med_hist?.treatment_given}</TableCell>
-                          </TableRow>
-                          <TableRow>
-                            <TableCell className="font-medium">Family History</TableCell>
-                            <TableCell>{med_hist?.family_history}</TableCell>
-                          </TableRow>
-                          
-                        </TableBody>
-                      </Table>
+                        <Table>
+                          <TableBody>
+                            <TableRow>
+                              <TableCell className="font-medium">Name:</TableCell>
+                              <TableCell>{basic_info?.name}</TableCell>
+                            </TableRow>
+                            <TableRow>
+                              <TableCell className="font-medium">Gender:</TableCell>
+                              <TableCell>{basic_info?.gender}</TableCell>
+                            </TableRow>
+                            <TableRow>
+                              <TableCell className="font-medium">Email:</TableCell>
+                              <TableCell>{basic_info?.email}</TableCell>
+                            </TableRow>
+                            <TableRow>
+                              <TableCell className="font-medium">Contact</TableCell>
+                              <TableCell>{basic_info?.contact}</TableCell>
+                            </TableRow>
+                            <TableRow>
+                              <TableCell className="font-medium">Address:</TableCell>
+                              <TableCell>{basic_info?.address}</TableCell>
+                            </TableRow>
+
+                          </TableBody>
+                        </Table>
+                        <Table>
+                          <TableBody>
+                            <TableRow>
+                              <TableCell className="font-medium">Diagnosis:</TableCell>
+                              <TableCell>{med_hist?.diagnosis}</TableCell>
+                            </TableRow>
+                            <TableRow>
+                              <TableCell className="font-medium">Date of Diagnosis:</TableCell>
+                              <TableCell>{formatDate(med_hist?.date_of_diagnosis)}</TableCell>
+                            </TableRow>
+                            <TableRow>
+                              <TableCell className="font-medium">Treatment Given:</TableCell>
+                              <TableCell>{med_hist?.treatment_given}</TableCell>
+                            </TableRow>
+                            <TableRow>
+                              <TableCell className="font-medium">Family History</TableCell>
+                              <TableCell>{med_hist?.family_history}</TableCell>
+                            </TableRow>
+
+                          </TableBody>
+                        </Table>
                       </div>
                     </DialogDescription>
                   </DialogHeader>
@@ -148,27 +154,125 @@ export default async function Page({ params }: { params: { id: string, patient_i
                   <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Your Upcoming Appointments</h2>
                 </div>
                 <div className="grid gap-2 sm:gap-4">
-                  <div className="flex items-center gap-4">
-                    <CalendarIcon className="w-8 h-8 rounded-lg bg-gray-200 p-2 dark:bg-gray-800" />
-                    <div className="grid gap-1.5">
-                      <h3 className="font-semibold">Dermatology</h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">15th March 2023, 10:00 AM</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <CalendarIcon className="w-8 h-8 rounded-lg bg-gray-200 p-2 dark:bg-gray-800" />
-                    <div className="grid gap-1.5">
-                      <h3 className="font-semibold">Cardiology</h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">20th March 2023, 11:30 AM</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <CalendarIcon className="w-8 h-8 rounded-lg bg-gray-200 p-2 dark:bg-gray-800" />
-                    <div className="grid gap-1.5">
-                      <h3 className="font-semibold">Orthopedics</h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">25th March 2023, 09:00 AM</p>
-                    </div>
-                  </div>
+                  {/* Upcoming Appointments */}
+                  {newappointments && newappointments.length > 0 ? (
+                    newappointments.map(async (appointment, index) => {
+
+                      const prescriptions = await getPrescription({ aid: Number(appointment.appointment_id) });
+                      return (
+                        <div key={index} className='flex flex-row justify-between'>
+                          <div className="flex items-center gap-4">
+                            <CalendarIcon className="w-8 h-8 rounded-lg bg-gray-200 p-2 dark:bg-gray-800" />
+                            <div className="grid gap-1.5">
+                              <h3 className="font-semibold">Doctor Name: {appointment.doctor_name}</h3>
+                              <p className="text-sm text-gray-500 dark:text-gray-400">Appointment Date: {formatDate(appointment.date_of_appointment)}</p>
+                              <p className="text-sm text-gray-500 dark:text-gray-400">Slot No :{appointment.slot_no}</p>
+                            </div>
+                          </div>
+
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button >Prescription</Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Prescription Details</DialogTitle>
+                                <DialogDescription>
+                                  {prescriptions?.doc_prescription?.length > 0 ? (
+                                    prescriptions.doc_prescription.map((prescription, index) => {
+                                      return (
+                                        <div key={index}>
+                                          <p>Medicine: {prescription.medication_name}</p>
+                                          <p>Dosage: {prescription.dosage}</p>
+                                          <p>Frequency: {prescription.frequency}</p>
+                                          <p>Precribed By: {prescription.doctor_name}</p>
+                                        </div>
+                                      );
+                                    })
+                                  ) : (
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">No Data Found</p>
+                                  )}
+                                </DialogDescription>
+                              </DialogHeader>
+                            </DialogContent>
+                          </Dialog>
+
+
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">No Appontments Scheduled</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+        <section className="w-full py-6  bg-gray-100 dark:bg-gray-800 ">
+          <div className="container px-4 md:px-6">
+            <div className="grid items-center gap-6 lg:grid-cols-[1fr_500px] lg:gap-12 xl:grid-cols-[1fr_550px]">
+              {/* <img
+                    alt="Image"
+                    className="mx-auto aspect-video overflow-hidden rounded-xl object-cover object-center sm:w-full sm:aspect-square lg:order-last"
+                    height="500"
+                    src="/placeholder.svg"
+                    width="500"
+                  /> */}
+              <div className="flex flex-col justify-center space-y-4">
+                <div className="space-y-2">
+                  <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Your Previous Appointments</h2>
+                </div>
+                <div className="grid gap-2 sm:gap-4">
+                  {oldappointments && oldappointments.length > 0 ? (
+                    oldappointments.map(async (appointment, index) => {
+
+                      const prescriptions = await getPrescription({ aid: Number(appointment.appointment_id) });
+                      return (
+                        <div key={index} className='flex flex-row justify-between'>
+                          <div className="flex items-center gap-4">
+                            <CalendarIcon className="w-8 h-8 rounded-lg bg-gray-200 p-2 dark:bg-gray-800" />
+                            <div className="grid gap-1.5">
+                              <h3 className="font-semibold">Doctor Name: {appointment.doctor_name}</h3>
+                              <p className="text-sm text-gray-500 dark:text-gray-400">Appointment Date: {formatDate(appointment.date_of_appointment)}</p>
+                              <p className="text-sm text-gray-500 dark:text-gray-400">Slot No :{appointment.slot_no}</p>
+                            </div>
+                          </div>
+
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button >Prescription</Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Prescription Details</DialogTitle>
+                                <DialogDescription>
+                                  {prescriptions?.doc_prescription?.length > 0 ? (
+                                    prescriptions.doc_prescription.map((prescription, index) => {
+                                      return (
+                                        <div key={index}>
+                                          <p>Medicine: {prescription.medication_name}</p>
+                                          <p>Dosage: {prescription.dosage}</p>
+                                          <p>Frequency: {prescription.frequency}</p>
+                                          <p>Precribed By: {prescription.doctor_name}</p>
+                                        </div>
+                                      );
+                                    })
+                                  ) : (
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">No Data Found</p>
+                                  )}
+                                </DialogDescription>
+                              </DialogHeader>
+                            </DialogContent>
+                          </Dialog>
+
+
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">No Data Found</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -179,23 +283,27 @@ export default async function Page({ params }: { params: { id: string, patient_i
             <div className="grid items-center gap-6 lg:grid-cols-[1fr_500px] lg:gap-12 xl:grid-cols-[1fr_550px]">
               <div className="flex flex-col justify-center space-y-4">
                 <div className="space-y-2">
-                  <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Your Medical Records</h2>
+                  <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Your Test Records</h2>
                 </div>
                 <div className="grid gap-2 sm:gap-4">
-                  {medical_tests.map((test, index) => (
-                    <div key={index} className="flex items-center gap-4">
-                      <FileIcon className="w-8 h-8 rounded-lg bg-gray-200 p-2 dark:bg-gray-800" />
-                      <div className="grid gap-1.5">
-                        <h3 className="font-semibold">{test.test_name}</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                          Result : {test.result}
-                        </p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                          {formatDate(test.date_taken)}
-                        </p>
+                  {medical_tests && medical_tests.length > 0 ? (
+                    medical_tests.map((test, index) => (
+                      <div key={index} className="flex items-center gap-4">
+                        <FileIcon className="w-8 h-8 rounded-lg bg-gray-200 p-2 dark:bg-gray-800" />
+                        <div className="grid gap-1.5">
+                          <h3 className="font-semibold">{test.test_name}</h3>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            Result : {test.result}
+                          </p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            {formatDate(test.date_taken)}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  ) : (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">No Data Found</p>
+                  )}
                 </div>
               </div>
             </div>

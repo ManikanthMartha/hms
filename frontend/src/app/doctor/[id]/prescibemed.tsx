@@ -25,6 +25,7 @@ import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { prescribeMeds } from '@/services/data-fetch';
+import { toast } from 'sonner';
 
 const formSchema = z.object({
     medication_name: z.string(),
@@ -36,9 +37,11 @@ const formSchema = z.object({
 export interface PrescribeMedProps {
     pid: string
     did: string
+    aid: string
 }
 
-export default function PrescribeMed({ pid, did }: PrescribeMedProps) {
+export default function PrescribeMed({ pid, did, aid }: PrescribeMedProps) {
+    const [open, setOpen] = React.useState(false)
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
@@ -50,12 +53,14 @@ export default function PrescribeMed({ pid, did }: PrescribeMedProps) {
 
     // 2. Define a submit handler.
     async function onSubmit(values: z.infer<typeof formSchema>) {
-        await prescribeMeds(did, pid, values.medication_name, values.dosage, values.frequency)
+        await prescribeMeds(aid, did, pid, values.medication_name, values.dosage, values.frequency)
+        setOpen(false);
+        toast.success("Medication Prescribed")
         console.log(pid, did, values)
     }
     return (
         <div>
-            <Dialog>
+            <Dialog open={open} onOpenChange={setOpen}>
                 <DialogTrigger asChild>
                     <Button>Prescribe Medicines</Button>
                     {/* Prescribe Medicines */}
